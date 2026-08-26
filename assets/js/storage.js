@@ -224,7 +224,11 @@
     new MutationObserver(enhance).observe(detail,{childList:true,subtree:true}); enhance();
   }
 
-  function setup(){ setupSharedExport(); setupMp4Support(); }
+  function setup(){
+    setupSharedExport();
+    setupMp4Support();
+    import(new URL('assets/js/compressor.js',document.baseURI).href).catch(err=>console.warn('compressor module load failed',err));
+  }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
   window.addEventListener('beforeunload', () => { localVideoUrls.forEach(url=>URL.revokeObjectURL(url)); localVideoUrls.clear(); });
 })();
