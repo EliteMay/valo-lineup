@@ -106,16 +106,17 @@ function setupUI(){
   const btn=card.querySelector('#autoCompressMp4'); const status=card.querySelector('#compressStatus'); const bar=card.querySelector('#compressProgress'); const result=card.querySelector('#compressResult');
   let busy=false;
   function setStatus(text,p=null){ status.textContent=text; if(p!==null)bar.style.width=`${Math.round(clamp(p,0,1)*100)}%`; }
+  function clearResult(){ result.classList.remove('show','warn'); result.innerHTML=''; }
   function showResult(html,warn=false){ result.innerHTML=html; result.classList.add('show'); result.classList.toggle('warn',warn); }
   async function refresh(){
     if(busy)return; const url=creatorVideo.value.trim(); const record=url&&window.LineupStorage?.getLocalVideo?await LineupStorage.getLocalVideo(url):null;
-    btn.disabled=!record?.blob; setStatus(record?.blob?`準備OK · ${formatBytes(record.size)}`:'MP4を選択すると使えます',0); result.classList.remove('show','warn');
+    btn.disabled=!record?.blob; setStatus(record?.blob?`準備OK · ${formatBytes(record.size)}`:'MP4を選択すると使えます',0);
   }
   btn.addEventListener('click',async()=>{
     if(busy)return; const url=creatorVideo.value.trim(); const record=await LineupStorage.getLocalVideo(url); if(!record?.blob)return refresh();
     if(record.size>MAX_INPUT){ showResult(`入力動画が <b>${formatBytes(record.size)}</b> あります。ブラウザ圧縮の安定性を優先して300MB超は処理しません。`,true); return; }
     if(record.size<=TARGET_LIMIT){ showResult(`すでに <b>${formatBytes(record.size)}</b> なのでGitHub画面からアップロードできる目安内です。圧縮は不要です。`); return; }
-    busy=true; btn.disabled=true; result.classList.remove('show','warn');
+    busy=true; btn.disabled=true; clearResult();
     try{
       setStatus('動画情報を確認中…',0.01); const meta=await readVideoMeta(record.blob); let plan=makePlan(record.size,meta);
       setStatus(`設定: ${planLabel(plan)}`,0.04);
@@ -142,8 +143,10 @@ function setupUI(){
       try{if(ffmpegInstance)await cleanupInput(ffmpegInstance);}catch{}
     }finally{ busy=false; await refresh(); }
   });
-  creatorVideo.addEventListener('change',()=>setTimeout(refresh,80)); creatorVideo.addEventListener('input',()=>setTimeout(refresh,80));
-  const observer=new MutationObserver(()=>refresh()); observer.observe(box,{subtree:true,childList:true,characterData:true});
+  const onVideoChanged=()=>{ if(!busy)clearResult(); setTimeout(refresh,80); };
+  creatorVideo.addEventListener('change',onVideoChanged); creatorVideo.addEventListener('input',onVideoChanged);
+  const heading=document.getElementById('creatorHeading');
+  if(heading&&'MutationObserver' in window) new MutationObserver(()=>setTimeout(refresh,80)).observe(heading,{childList:true,subtree:true,characterData:true});
   refresh(); return true;
 }
 function boot(){ if(setupUI())return; const observer=new MutationObserver(()=>{if(setupUI())observer.disconnect();}); observer.observe(document.documentElement,{childList:true,subtree:true}); }
