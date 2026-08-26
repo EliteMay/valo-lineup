@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#0b1118" />
+  <title>Lineup Lab — VALORANT 定点ライブラリ</title>
+  <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="rail" aria-label="メインナビゲーション">
+      <button class="brand-mark" data-tab-target="library" title="Lineup Lab">
+        <span class="brand-cut"></span><span>LL</span>
+      </button>
+      <nav class="rail-nav">
+        <button class="rail-btn active" data-tab-target="library" title="定点を見る" aria-label="定点を見る">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5 9 3l6 3.5L21 3v14.5L15 21l-6-3.5L3 21V6.5Zm6-1.2v10.1l6 3.4V8.7L9 5.3Z"/></svg>
+        </button>
+        <button class="rail-btn" data-tab-target="create" title="自分の定点を作る" aria-label="自分の定点を作る">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4h2v7h7v2h-7v7h-2v-7H4v-2h7V4Z"/></svg>
+        </button>
+        <button class="rail-btn" data-tab-target="mine" title="マイ定点" aria-label="マイ定点">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8 14.8 8l5.8.8-4.2 4.1 1 5.8L12 16l-5.4 2.7 1-5.8-4.2-4.1L9.2 8 12 2.8Z"/></svg>
+        </button>
+      </nav>
+      <div class="rail-bottom">
+        <button class="rail-btn" id="openDataModal" title="データ管理" aria-label="データ管理">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3Zm-8 7c1.7 1.3 4.7 2 8 2s6.3-.7 8-2v4c0 1.7-3.6 3-8 3s-8-1.3-8-3v-4Zm0 8c1.7 1.3 4.7 2 8 2s6.3-.7 8-2v1c0 1.7-3.6 3-8 3s-8-1.3-8-3v-1Z"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div class="title-stack">
+          <span class="eyebrow">VALORANT LINEUP WORKSPACE</span>
+          <h1 id="pageTitle">定点ライブラリ</h1>
+        </div>
+        <nav class="top-tabs" aria-label="画面切り替え">
+          <button class="top-tab active" data-tab-target="library">定点を見る</button>
+          <button class="top-tab" data-tab-target="create">自分で作る</button>
+          <button class="top-tab" data-tab-target="mine">マイ定点</button>
+        </nav>
+        <div class="top-actions">
+          <div class="connection-pill" id="apiStatus"><span class="status-dot"></span><span>データ読込中</span></div>
+          <button class="btn ghost compact" id="quickCreateBtn">＋ 自分の定点</button>
+        </div>
+      </header>
+
+      <section class="tab-panel active" data-tab="library">
+        <div class="library-layout">
+          <aside class="filter-panel panel-card">
+            <div class="panel-heading">
+              <div><span class="section-kicker">FILTERS</span><h2>条件を絞る</h2></div>
+              <button class="text-btn" id="resetFilters">リセット</button>
+            </div>
+
+            <label class="search-field">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 19.6-4.7-4.7a7.7 7.7 0 1 0-1.4 1.4l4.7 4.7 1.4-1.4ZM5.5 10.2a4.7 4.7 0 1 1 9.4 0 4.7 4.7 0 0 1-9.4 0Z"/></svg>
+              <input id="searchInput" placeholder="定点名・メモを検索" />
+            </label>
+
+            <div class="filter-block">
+              <div class="filter-label-row"><span>マップ</span><span id="mapCountLabel" class="muted-mini"></span></div>
+              <div class="map-strip" id="mapStrip"></div>
+            </div>
+
+            <div class="filter-block">
+              <div class="filter-label-row"><span>エージェント</span><button class="mini-link" id="clearAgent">解除</button></div>
+              <div class="agent-grid" id="agentGrid"></div>
+            </div>
+
+            <div class="filter-block">
+              <div class="filter-label-row"><span>アビリティ</span></div>
+              <div class="ability-row" id="abilityFilter"></div>
+            </div>
+
+            <div class="filter-block split-controls">
+              <div>
+                <span class="filter-caption">SIDE</span>
+                <div class="segmented" id="sideFilter">
+                  <button class="active" data-value="all">すべて</button>
+                  <button data-value="attack">攻め</button>
+                  <button data-value="defense">守り</button>
+                </div>
+              </div>
+              <div>
+                <span class="filter-caption">DIFFICULTY</span>
+                <select id="difficultyFilter" class="select-control">
+                  <option value="all">すべて</option><option value="easy">簡単</option><option value="medium">普通</option><option value="hard">難しい</option>
+                </select>
+              </div>
+            </div>
+
+            <label class="check-row"><input type="checkbox" id="favoritesOnly" /><span class="custom-check"></span><span>お気に入りだけ表示</span></label>
+          </aside>
+
+          <section class="map-column">
+            <div class="map-toolbar panel-card slim-card">
+              <div class="map-title-wrap">
+                <span class="map-chip" id="selectedMapChip">ASCENT</span>
+                <div><strong id="mapTitle">Ascent</strong><span id="resultCount">0 定点</span></div>
+              </div>
+              <div class="map-actions">
+                <button class="icon-action active" id="togglePaths" title="軌道を表示">
+                  <svg viewBox="0 0 24 24"><path d="M4 17c4-8 7 2 11-7 1.1-2.4 2.8-3.4 5-3.3v2c-1.4 0-2.5.7-3.3 2.2-4.8 10.1-8.8.7-11 7L4 17Z"/></svg>
+                </button>
+                <button class="icon-action" id="fitMap" title="マップをリセット">
+                  <svg viewBox="0 0 24 24"><path d="M4 9V4h5v2H6v3H4Zm11-5h5v5h-2V6h-3V4ZM6 15v3h3v2H4v-5h2Zm12 0h2v5h-5v-2h3v-3Z"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="map-stage panel-card" id="libraryMapStage">
+              <div class="map-backdrop"></div>
+              <img id="libraryMapImage" class="map-image" alt="選択中マップ" />
+              <svg id="libraryRouteSvg" class="route-layer" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet"></svg>
+              <div id="libraryPins" class="pin-layer"></div>
+              <div class="map-empty" id="mapEmptyState">
+                <span class="empty-cross">＋</span><strong>条件に一致する定点がありません</strong><span>フィルターを変えるか、自分の定点を追加してください。</span>
+              </div>
+              <div class="map-legend">
+                <span><i class="legend-dot start"></i>立ち位置</span><span><i class="legend-dot end"></i>着弾点</span><span><i class="legend-line"></i>軌道</span>
+              </div>
+            </div>
+
+            <div class="lineup-list-head">
+              <div><span class="section-kicker">MATCHING LINEUPS</span><h2>定点一覧</h2></div>
+              <select id="sortFilter" class="select-control compact-select"><option value="recommended">おすすめ順</option><option value="difficulty">難易度順</option><option value="name">名前順</option></select>
+            </div>
+            <div class="lineup-card-grid" id="lineupCards"></div>
+          </section>
+
+          <aside class="detail-panel panel-card" id="detailPanel">
+            <div id="detailContent" class="detail-content"></div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="tab-panel" data-tab="create">
+        <div class="create-grid">
+          <form class="creator-panel panel-card" id="creatorForm">
+            <div class="panel-heading creator-heading">
+              <div><span class="section-kicker">LINEUP BUILDER</span><h2 id="creatorHeading">新しい定点</h2></div>
+              <span class="draft-badge" id="draftBadge">下書き</span>
+            </div>
+
+            <div class="form-section">
+              <div class="form-section-title"><span>01</span><strong>基本情報</strong></div>
+              <label class="field-label">定点名<input required id="creatorTitle" maxlength="60" placeholder="例：A Default Recon - A Main" /></label>
+              <div class="form-two">
+                <label class="field-label">マップ<select required id="creatorMap" class="select-control full"></select></label>
+                <label class="field-label">エージェント<select required id="creatorAgent" class="select-control full"></select></label>
+              </div>
+              <div class="form-two">
+                <label class="field-label">アビリティ<select required id="creatorAbility" class="select-control full"></select></label>
+                <label class="field-label">サイト<input id="creatorSite" maxlength="18" placeholder="A / B / Mid" /></label>
+              </div>
+              <div class="form-two">
+                <label class="field-label">攻守<select id="creatorSide" class="select-control full"><option value="attack">攻め</option><option value="defense">守り</option><option value="both">両方</option></select></label>
+                <label class="field-label">難易度<select id="creatorDifficulty" class="select-control full"><option value="easy">簡単</option><option value="medium" selected>普通</option><option value="hard">難しい</option></select></label>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <div class="form-section-title"><span>02</span><strong>マップ上の位置</strong></div>
+              <p class="form-help">右のマップをクリックして位置を登録します。中継点は複数置けます。</p>
+              <div class="route-mode-grid" id="routeModeButtons">
+                <button type="button" class="route-mode active" data-mode="start"><i class="route-dot start"></i><span>立ち位置</span><small id="startCoordLabel">未設定</small></button>
+                <button type="button" class="route-mode" data-mode="bounce"><i class="route-dot bounce"></i><span>中継点</span><small id="bounceCoordLabel">0点</small></button>
+                <button type="button" class="route-mode" data-mode="end"><i class="route-dot end"></i><span>着弾点</span><small id="endCoordLabel">未設定</small></button>
+              </div>
+              <div class="inline-actions"><button type="button" class="btn ghost small" id="undoRoutePoint">1つ戻す</button><button type="button" class="btn ghost small" id="clearRoute">ルート全消去</button></div>
+            </div>
+
+            <div class="form-section">
+              <div class="form-section-title"><span>03</span><strong>参考画像・動画</strong></div>
+              <div class="screenshot-guide">
+                <div class="shot-keys"><kbd>Win</kbd><span>+</span><kbd>Shift</kbd><span>+</span><kbd>S</kbd></div>
+                <div><strong>スクショをそのまま登録</strong><small>下の画像枠を選択 → 切り取り → 戻って <kbd>Ctrl</kbd> + <kbd>V</kbd></small></div>
+              </div>
+              <div class="upload-grid screenshot-grid">
+                <div class="upload-box paste-target" data-image-slot="standing" tabindex="0" role="button" aria-label="立ち位置の画像枠">
+                  <input type="file" accept="image/*" data-image-key="standing" />
+                  <span class="upload-plus">⌖</span><strong>立ち位置</strong><small class="slot-status">ここにスクショ</small><img data-preview="standing" alt="立ち位置プレビュー" />
+                  <div class="upload-actions"><button type="button" data-paste-image="standing">貼る</button><button type="button" data-pick-image="standing">ファイル</button><button type="button" data-remove-image="standing" title="画像を削除">×</button></div>
+                </div>
+                <div class="upload-box" data-image-slot="aim" tabindex="0" role="button" aria-label="合わせ場所の画像枠">
+                  <input type="file" accept="image/*" data-image-key="aim" />
+                  <span class="upload-plus">⌖</span><strong>合わせ場所</strong><small class="slot-status">ここにスクショ</small><img data-preview="aim" alt="合わせ場所プレビュー" />
+                  <div class="upload-actions"><button type="button" data-paste-image="aim">貼る</button><button type="button" data-pick-image="aim">ファイル</button><button type="button" data-remove-image="aim" title="画像を削除">×</button></div>
+                </div>
+                <div class="upload-box" data-image-slot="result" tabindex="0" role="button" aria-label="着弾結果の画像枠">
+                  <input type="file" accept="image/*" data-image-key="result" />
+                  <span class="upload-plus">⌖</span><strong>着弾結果</strong><small class="slot-status">ここにスクショ</small><img data-preview="result" alt="着弾結果プレビュー" />
+                  <div class="upload-actions"><button type="button" data-paste-image="result">貼る</button><button type="button" data-pick-image="result">ファイル</button><button type="button" data-remove-image="result" title="画像を削除">×</button></div>
+                </div>
+              </div>
+              <p class="form-help screenshot-help">選択中の枠には赤い縁が付きます。スクショ後はページ内のどこで <strong>Ctrl + V</strong> しても入ります。</p>
+              <label class="field-label">YouTube / 動画URL<input id="creatorVideo" type="url" placeholder="https://youtu.be/..." /></label>
+            </div>
+
+            <div class="form-section">
+              <div class="form-section-title"><span>04</span><strong>補足</strong></div>
+              <label class="field-label">メモ<textarea id="creatorNotes" rows="4" maxlength="500" placeholder="何ドット合わせ、走り投げ、ジャンプ投げ、注意点など"></textarea></label>
+              <label class="field-label">タグ<input id="creatorTags" maxlength="100" placeholder="postplant, recon, safe など（カンマ区切り）" /></label>
+            </div>
+
+            <div class="creator-footer">
+              <button type="button" class="btn ghost" id="cancelEditBtn">クリア</button>
+              <button type="submit" class="btn primary" id="saveLineupBtn">定点を保存</button>
+            </div>
+          </form>
+
+          <section class="creator-map-panel">
+            <div class="creator-top panel-card slim-card">
+              <div class="creator-agent-preview"><div class="agent-avatar xl"><img id="creatorAgentImg" alt="" /><span id="creatorAgentFallback">?</span></div><div><span class="section-kicker">PREVIEW</span><strong id="creatorPreviewTitle">新しい定点</strong><small id="creatorPreviewMeta">マップとエージェントを選択</small></div></div>
+              <div class="creator-progress"><span id="creatorProgressText">0 / 2 必須地点</span><div><i id="creatorProgressBar"></i></div></div>
+            </div>
+            <div class="map-stage creator-map panel-card" id="creatorMapStage">
+              <div class="map-backdrop"></div>
+              <img id="creatorMapImage" class="map-image" alt="作成中のマップ" />
+              <svg id="creatorRouteSvg" class="route-layer creator-svg" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet"></svg>
+              <div id="creatorPins" class="pin-layer"></div>
+              <div class="creator-map-tip" id="creatorMapTip"><strong>立ち位置を指定</strong><span>マップ上をクリック</span></div>
+            </div>
+            <div class="creator-help panel-card">
+              <div class="help-icon">?</div><div><strong>作り方</strong><p>立ち位置 → 必要なら中継点 → 着弾点の順で置くだけです。保存後も「マイ定点」から編集できます。</p></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="tab-panel" data-tab="mine">
+        <div class="mine-wrap">
+          <div class="mine-hero panel-card">
+            <div><span class="section-kicker">YOUR LIBRARY</span><h2>マイ定点</h2><p>自分で作った定点だけを、マップ・エージェント・お気に入りで整理できます。</p></div>
+            <button class="btn primary" data-tab-target="create">＋ 新しい定点</button>
+          </div>
+          <div class="mine-toolbar">
+            <label class="search-field wide"><svg viewBox="0 0 24 24"><path d="m21 19.6-4.7-4.7a7.7 7.7 0 1 0-1.4 1.4l4.7 4.7 1.4-1.4ZM5.5 10.2a4.7 4.7 0 1 1 9.4 0 4.7 4.7 0 0 1-9.4 0Z"/></svg><input id="mineSearch" placeholder="マイ定点を検索" /></label>
+            <span class="mine-count" id="mineCount">0 件</span>
+          </div>
+          <div class="mine-grid" id="mineGrid"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="dataModal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="dataModalTitle">
+      <div class="modal-head"><div><span class="section-kicker">DATA</span><h2 id="dataModalTitle">データ管理</h2></div><button class="modal-close" id="closeDataModal">×</button></div>
+      <div class="modal-body">
+        <div class="data-stat"><span>保存中のマイ定点</span><strong id="dataCount">0</strong></div>
+        <button class="data-action" id="exportDataBtn"><span class="data-icon">↓</span><div><strong>JSONを書き出す</strong><small>バックアップや別PCへの移行用</small></div></button>
+        <label class="data-action file-action"><input type="file" id="importDataInput" accept="application/json,.json" /><span class="data-icon">↑</span><div><strong>JSONを読み込む</strong><small>現在のデータへ追加します</small></div></label>
+        <button class="data-action danger" id="clearUserDataBtn"><span class="data-icon">×</span><div><strong>マイ定点をすべて削除</strong><small>この操作は元に戻せません</small></div></button>
+      </div>
+      <div class="modal-note">画像は容量を抑えるため、保存時にブラウザ内で自動圧縮します。</div>
+    </div>
+  </div>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+  <script src="assets/js/storage.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
