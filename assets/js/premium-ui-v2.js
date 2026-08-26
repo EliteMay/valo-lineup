@@ -14,6 +14,18 @@
     document.head.appendChild(link);
   }
 
+  if (!document.getElementById('lineupPremiumV2Accents')) {
+    const style = document.createElement('style');
+    style.id = 'lineupPremiumV2Accents';
+    style.textContent = `
+      .lineuplab-v2 .detail-corner-v2{position:absolute;right:16px;top:15px;z-index:4;font-size:8px;font-weight:900;letter-spacing:.16em;color:rgba(255,255,255,.45);padding:5px 7px;border:1px solid rgba(255,255,255,.12);border-radius:5px;background:rgba(6,8,11,.28);backdrop-filter:blur(6px)}
+      .lineuplab-v2 .map-watermark-v2{position:absolute;right:18px;bottom:16px;z-index:8;display:flex;flex-direction:column;align-items:flex-end;gap:2px;pointer-events:none;text-shadow:0 2px 7px rgba(0,0,0,.7)}
+      .lineuplab-v2 .map-watermark-v2 span{font-size:9px;font-weight:900;letter-spacing:.19em;color:rgba(238,242,244,.55)}
+      .lineuplab-v2 .map-watermark-v2 small{font-size:8px;letter-spacing:.11em;color:rgba(153,165,174,.42)}
+    `;
+    document.head.appendChild(style);
+  }
+
   let sharedItems = [];
   let sharedLoaded = false;
   let decorateQueued = false;
@@ -81,9 +93,14 @@
       const thumb = preferredThumb(item);
       const background = thumb || mapImage;
       const agentSrc = cardAgentImage(card);
+      const ability = item?.ability || 'LINEUP';
+      const signature = [background, agentSrc, ability, thumb ? 'media' : 'map'].join('|');
+
       visual.classList.toggle('is-map', !thumb);
       visual.dataset.lineupId = id;
-      visual.innerHTML = `${background ? `<img class="lineup-thumb-v2" src="${esc(background)}" alt="" loading="lazy">` : ''}${agentSrc ? `<img class="lineup-card-agent-v2" src="${esc(agentSrc)}" alt="" loading="lazy">` : ''}<span class="lineup-card-ability-v2">${esc(item?.ability || 'LINEUP')}</span>`;
+      if (visual.dataset.signature === signature) return;
+      visual.dataset.signature = signature;
+      visual.innerHTML = `${background ? `<img class="lineup-thumb-v2" src="${esc(background)}" alt="" loading="lazy">` : ''}${agentSrc ? `<img class="lineup-card-agent-v2" src="${esc(agentSrc)}" alt="" loading="lazy">` : ''}<span class="lineup-card-ability-v2">${esc(ability)}</span>`;
     });
   }
 
