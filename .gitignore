@@ -1,0 +1,14 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
+
+# local packages / temporary archives
+node_modules/
+*.zip
+*.log
+
+# local-only media staging
+assets/videos/_local/
