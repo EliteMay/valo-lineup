@@ -1,238 +1,205 @@
-# Lineup Lab v0.9.0
+# Lineup Lab v1.0.0
 
-VALORANTの定点を、**立ち位置 → 中継点 → 着弾点**としてマップ上で管理し、参考画像・動画と一緒に確認できるGitHub Pages向け静的Webアプリです。
-
-友達同士で同じ定点を共有しつつ、自分の作成途中データはブラウザ内に保持する構成です。
+VALORANTの定点を **立ち位置 → 中継点 → 着弾点** としてマップ上で管理し、参考画像・動画と一緒に確認できるGitHub Pages向け静的Webアプリです。
 
 ## 目的
 
 - 定点をマップ・エージェント・アビリティから素早く探す
 - 自分で定点を作成・編集する
-- スクリーンショットやMP4を一緒に保存する
+- スクリーンショットとMP4を定点へ付ける
 - GitHub Pagesだけで友達と共通定点を共有する
-- 個人制作感を減らし、日常的に使いやすい攻略ツールにする
+- 保存事故・共有事故・修正時の連鎖破壊を減らす
 
-## v0.9で改善したこと
+## 使用者
 
-他の自作GitHubプロジェクトで使っている良い設計を、Lineup Lab向けに取り入れました。
+個人利用・友達同士での共有を想定しています。大規模サービス向けのアカウント管理や投稿審査は前提にしていません。
 
-### VReviewから参考にしたもの
+## v1.0で直した重要点
 
-- サイト上へ現在バージョンを常時表示
-- 状態・数値を短く見せるUI
-- UI機能とデータ処理を分離する考え方
+### 1. UIと動画圧縮を分離
 
-### ASMRTubeから参考にしたもの
+v0.9ではProduct UIがMP4圧縮ローダー経由で起動していました。v1.0では `index.html` から `foundation-v1.js` を直接読み込むように変更し、圧縮側は圧縮本体だけを読み込みます。
 
-- ダッシュボード型の概要表示
-- モバイル時のサイドメニュードロワー
-- データ管理画面内の統計・表示設定
-- コンパクト表示などのユーザー設定
+```text
+index.html
+├─ storage.js
+├─ app.js
+└─ foundation-v1.js
+   └─ premium-ui-v2.js
 
-### LyricTubeから参考にしたもの
+storage.js
+└─ compressor.js
+   └─ compressor-core.js
+```
 
-- 読みやすい文字サイズと情報密度
-- `focus-visible` によるキーボード操作の分かりやすさ
-- 操作部品の統一感
-- GitHub Pages運用時の `.nojekyll`
+動画圧縮側の不具合がUI全体へ波及しにくい構造です。
 
-### AP Study Notesから参考にしたもの
+### 2. v0.9 Product UI層を削除
 
-- データが増えた時にHTMLへ直書きせずJSON側へ寄せる方針
-- 大規模化してから分割できるよう、表示処理とデータを分離する考え方
+以下は削除済みです。
 
-現時点では共有フローを単純に保つため、定点データは引き続き `data/lineups.json` 1ファイルです。
+- `assets/js/product-ui.js`
+- `assets/css/product-ui.css`
+
+過剰だったダッシュボード統計と二重バージョン表示も廃止しました。
+
+### 3. GitHub共有を明示選択式へ変更
+
+「マイ定点」に **GitHub共有** のON/OFFを追加しました。
+
+共有用JSONを書き出すときは、
+
+- GitHub共有ONのマイ定点だけ追加・更新
+- GitHub共有OFFへ変更した既存共有定点は共有JSONから除外
+- 書き出す前に件数を確認
+
+という流れになります。
+
+作りかけ・テスト用定点を意図せず共有しにくくしています。
+
+### 4. 削除した定点のローカルMP4を掃除
+
+定点削除・全削除・動画差し替え時に、使われなくなったIndexedDB内のMP4を削除する処理を追加しました。
+
+### 5. JSON読み込みを検証
+
+サイトへJSONを読み込む前に、最低限以下を確認します。
+
+- title / map / agent
+- start / end 座標
+- bounces
+- videoUrl
+
+不正JSONはそのまま保存しません。
+
+### 6. GitHub Actionsで共有JSONを自動検証
+
+`tests/validate-data.mjs` と `.github/workflows/validate.yml` を追加しました。
+
+`data/lineups.json` 更新時に以下を自動検査します。
+
+- トップレベル配列か
+- 必須項目
+- ID重複
+- 座標0〜100
+- side / difficulty
+- tags / images / videoUrl
+
+npm依存はありません。
+
+### 7. 狭い画面を再設計
+
+1180px以下では、
+
+- 左ナビ → ドロワー
+- フィルター → 右ドロワー
+- MAPを先に見られるレイアウト
+
+へ切り替えます。
+
+### 8. 小さすぎる文字を緩和
+
+8〜9px中心だった補助文字を減らし、10〜12px以上を中心に再調整しました。
+
+### 9. 「おすすめ順」を修正
+
+実際におすすめスコアを計算していなかったため、表示名を **標準順** に変更しました。
 
 ## 主な機能
 
 ### 定点ライブラリ
 
-- GitHub共通 `data/lineups.json` 読み込み
-- マップ選択
-- エージェント検索・選択
-- アビリティ選択
-- 攻め / 守り
-- 難易度
+- `data/lineups.json` 読み込み
+- マップ / エージェント / アビリティ / 攻守 / 難易度
+- エージェント検索
 - お気に入り
 - フリーワード検索
-- ソート
+- 標準 / 難易度 / 名前ソート
 - マップ上の立ち位置 / 中継点 / 着弾点
 - 軌道表示
 - 近い着弾点のグループ化
 - 参考画像付き定点カード
-- エージェント画像付き詳細パネル
+- 詳細パネル
 - YouTube / 通常動画 / MP4再生
 
-### v0.9 Product UX
+### 定点作成
 
-ライブラリ上部に以下を常時表示します。
+- マップ上をクリックして位置登録
+- マーカーのドラッグ微調整
+- 中継点複数
+- 立ち位置 / 合わせ場所 / 着弾結果画像
+- `Win + Shift + S` → `Ctrl + V`
+- 画像ファイル選択
+- MP4ファイル選択
+- MP4をIndexedDBへ保存
+- GitHub向けMP4自動圧縮
+- メモ / タグ
+- 編集 / 削除
 
-- 現在のマップ
-- 現在条件に一致する定点数
-- GitHub共有定点数
-- マイ定点数
-- お気に入り数
+### データ管理
 
-キーボードショートカット:
-
-- `/` — 定点検索へ移動
-- `N` — 新しい定点を作成
-
-### 表示設定
-
-データ管理画面から、このブラウザだけの表示設定を変更できます。
-
-- サムネイル表示 ON / OFF
-- コンパクト表示 ON / OFF
-
-設定は `localStorage` に保存します。
-
-### モバイル / 狭い画面
-
-900px以下では左ナビを固定表示せず、メニューボタンから開くドロワー方式になります。
-
-デスクトップでは従来どおり、マップ・フィルター・詳細を同時に見られる構成です。
-
-## 自分の定点を作る
-
-- 定点名
-- マップ
-- エージェント
-- アビリティ
-- サイト
-- 攻守
-- 難易度
-- 立ち位置
-- 0個以上の中継点
-- 着弾点
-- 立ち位置スクリーンショット
-- 合わせ場所スクリーンショット
-- 着弾結果スクリーンショット
-- MP4
-- YouTube / 動画URL
-- メモ
-- タグ
-
-マップ上のマーカーはドラッグして微調整できます。
-
-## スクリーンショット登録
-
-1. 「立ち位置」「合わせ場所」「着弾結果」の枠を選択
-2. `Win + Shift + S`
-3. VALORANT画面を切り取る
-4. サイトへ戻る
-5. `Ctrl + V`
-
-画像はWebPへ縮小圧縮して保存します。
-
-## MP4
-
-### ローカル保存
-
-PCから選択したMP4本体は **IndexedDB** へ保存します。
-
-そのため、IndexedDB保存完了後なら、元のPC上のMP4を削除しても同じブラウザでは再生できます。
-
-ただし以下では引き継がれません。
-
-- ブラウザのサイトデータ削除
-- 別ブラウザ
-- 別PC
-
-### GitHub共有
-
-友達にも動画を見せる場合:
-
-1. MP4を選択
-2. 必要ならGitHub向け自動圧縮
-3. 「共有用MP4を保存」
-4. GitHubの `assets/videos/` へアップロード
-5. 共有用 `lineups.json` も更新
-
-定点JSONには動画本体を埋め込まず、MP4 URLだけを保存します。
-
-## GitHub向けMP4自動圧縮
-
-ブラウザ内の `ffmpeg.wasm` を使用します。
-
-- 目標: 24MB以下
-- 内部目標: 約22.5MB
-- H.264 / libx264
-- AAC 96kbps
-- 最大60fps
-- 動画時間からビットレートを自動計算
-- 最大解像度を1080p / 720p / 540p / 480p相当から自動選択
-- 24MBを超えた場合は1回だけ自動再調整
-- 圧縮後が元動画より大きい場合は元動画を維持
-- 300MB超はブラウザ安定性優先で対象外
-
-圧縮エンジンは通常閲覧時には読み込まず、圧縮時だけ取得します。
+- GitHub共有ON/OFF
+- 共有用 `lineups.json` 書き出し
+- 書き出し前の件数確認
+- JSON検証付き読み込み
+- 保存容量の目安表示
+- サムネイルON/OFF
+- コンパクト表示
 
 ## 保存場所
 
-### GitHub
+### 共通定点
 
-- 共通定点: `data/lineups.json`
-- 共有MP4: `assets/videos/`
+`data/lineups.json`
 
-### ブラウザ
+GitHub Pagesを開く全員に共通です。
 
-- マイ定点: `localStorage`
-- お気に入り: `localStorage`
-- マップ / 表示設定: `localStorage`
-- ローカルMP4本体: `IndexedDB`
+### マイ定点
 
-主なlocalStorageキー:
+ブラウザのlocalStorageです。
 
-```text
-lineupLab.userLineups.v1
-lineupLab.favorites.v1
-lineupLab.preferences.v1
-```
+- `lineupLab.userLineups.v1`
+- `lineupLab.favorites.v1`
+- `lineupLab.preferences.v1`
 
-## 共有用JSON
+### ローカルMP4
 
-1. 自分の定点を作成
-2. 左下「データ管理」
-3. 「共有用JSONを書き出す」
-4. ダウンロードされた `lineups.json` をGitHubの `data/lineups.json` と置き換える
-5. GitHub Pages反映後、友達が更新すると同じ定点を確認できる
+IndexedDB:
 
-ブラウザへGitHubトークンは保存しません。
+- DB: `lineupLab.videos.v1`
+- store: `videos`
 
-## データ構造
+MP4登録後は元ファイルを削除しても、同じブラウザのIndexedDBが残っていれば再生できます。
 
-```json
-{
-  "id": "uuid",
-  "source": "shared",
-  "title": "A Main Recon",
-  "map": "Ascent",
-  "agent": "Sova",
-  "ability": "Recon Bolt",
-  "side": "attack",
-  "site": "A",
-  "difficulty": "medium",
-  "start": { "x": 31.2, "y": 74.0 },
-  "bounces": [],
-  "end": { "x": 57.0, "y": 31.0 },
-  "notes": "合わせ方など",
-  "tags": ["recon", "safe"],
-  "videoUrl": "https://USER.github.io/valo-lineup/assets/videos/example.mp4",
-  "images": {
-    "standing": "data:image/webp;base64,...",
-    "aim": "data:image/webp;base64,...",
-    "result": "data:image/webp;base64,..."
-  }
-}
-```
+## GitHub共有手順
 
-座標は0〜100%の正規化座標です。
+1. 「自分で作る」で定点を保存
+2. 「マイ定点」で共有したい定点の **GitHub共有** をON
+3. MP4を共有する場合は共有用MP4を保存
+4. MP4を `assets/videos/` へアップロード
+5. 「データ管理」→「共有用JSONを書き出す」
+6. 確認画面で件数を確認
+7. 出力された `lineups.json` で `data/lineups.json` を置き換える
+8. GitHub Pages反映後に更新
+
+## MP4自動圧縮
+
+- 目標: 24MB以下
+- 内部目標: 約22.5MB
+- H.264 / AAC
+- 最大60fps
+- 動画時間に応じて最大1080p / 720p / 540p / 480p
+- 1回目で24MBを超えた場合は1回再調整
+- 300MB超は自動圧縮対象外
+- ffmpeg.wasmは圧縮時だけ読み込み
 
 ## ファイル構成
 
 ```text
 /
+├─ .github/
+│  └─ workflows/
+│     └─ validate.yml
 ├─ .gitignore
 ├─ .nojekyll
 ├─ index.html
@@ -242,84 +209,81 @@ lineupLab.preferences.v1
 │  ├─ css/
 │  │  ├─ styles.css
 │  │  ├─ premium-v2.css
-│  │  └─ product-ui.css
+│  │  └─ foundation-v1.css
 │  ├─ icons/
 │  │  └─ favicon.svg
 │  ├─ js/
 │  │  ├─ app.js
 │  │  ├─ storage.js
+│  │  ├─ foundation-v1.js
 │  │  ├─ premium-ui-v2.js
-│  │  ├─ product-ui.js
 │  │  ├─ compressor.js
 │  │  ├─ compressor-core.js
 │  │  └─ ffmpeg-worker.js
 │  └─ videos/
 │     └─ .gitkeep
-└─ data/
-   └─ lineups.json
+├─ data/
+│  └─ lineups.json
+└─ tests/
+   └─ validate-data.mjs
 ```
-
-### UIレイヤー
-
-```text
-styles.css
-   ↓
-premium-v2.css / premium-ui-v2.js
-   ↓
-product-ui.css / product-ui.js
-```
-
-`product-ui.js` はv0.9のプロダクトUXを担当し、定点データやMP4圧縮本体とは分離しています。
-
-`compressor.js` は軽量ローダーで、Product UIと `compressor-core.js` を読み込みます。
-
-## GitHub Pages
-
-Node.js / npm / ローカルサーバーは不要です。
-
-`Settings` → `Pages`:
-
-```text
-Deploy from a branch
-main
-/(root)
-```
-
-`.nojekyll` をリポジトリ直下へ配置しています。
 
 ## 崩してはいけない仕様
 
 1. GitHub Pagesの `main / (root)` で動く
-2. Node.js / npmを必須にしない
-3. `data/lineups.json` を全員共通データとして使う
-4. 自作定点はブラウザへ保存する
-5. MP4本体をJSON / localStorageへ埋め込まない
-6. ローカルMP4はIndexedDBへ保存する
-7. 共有MP4は `assets/videos/` を使う
-8. マップ座標は0〜100%で保持する
-9. 立ち位置・着弾点は保存必須
-10. 中継点は0個以上
-11. `Win + Shift + S` → `Ctrl + V` を維持
-12. GitHubトークンや秘密情報を公開コードへ入れない
-13. 見た目改善のために主要機能を削除しない
-14. 重いアニメーションを常時動作させない
-15. 表示設定を変更しても既存のマップ設定を消さない
+2. 利用時にNode.js / npmを必須にしない
+3. `data/lineups.json` はトップレベル配列を維持
+4. 座標は0〜100%で保存
+5. 立ち位置・着弾点は必須
+6. 中継点は0個以上
+7. `Win + Shift + S` → `Ctrl + V` を維持
+8. APIキー・GitHubトークンを公開HTML/JSへ入れない
+9. MP4本体をlocalStorage/JSONへ埋め込まない
+10. 共有MP4は `assets/videos/` を利用
+11. 見た目改善のために主要機能を削除しない
 
-## 注意点 / 未確認
+## 現在残っている重要課題
 
-- Windows実機のGitHub Pages上でffmpeg.wasmの圧縮完走は未確認
-- Firefox / Chromium両方でv0.9の最終視覚確認は未実施
-- 300MBを超える動画は自動圧縮対象外
-- 大量の定点が増えた場合は `data/lineups.json` のマップ別分割を検討する
+### 共有定点の内容不足
+
+現在の `data/lineups.json` はUI確認用デモが中心です。実戦で使える定点データは別途追加が必要です。内容を推測して実用定点を捏造することはしません。
+
+### 画像保存はまだlocalStorage互換方式
+
+画像はWebP圧縮していますが、Data URLを定点JSON内へ保持する方式が残っています。
+
+v1.0では、
+
+- 4MBを超えそうなローカル定点JSONを保存しないガード
+- データ管理で使用量表示
+- バックアップ注意表示
+
+まで追加しています。
+
+将来的には画像もIndexedDBへ移し、共有時は `assets/lineups/<id>/` にWebPを置く方式へ移行するのが理想です。この移行は既存保存データとの互換処理が必要なため、今回のv1.0では無理に破壊的変更をしていません。
+
+### app.js / premium-ui-v2.js の統合
+
+v0.9よりUIレイヤーは1枚減りましたが、カード装飾など一部はまだ `premium-ui-v2.js` のMutationObserver方式です。今後さらに保守性を上げる場合は `app.js` のrender処理へ統合します。
+
+## 未確認
+
+- Windows実機のGitHub Pages上でのffmpeg.wasm圧縮完走
+- Firefox / Chromiumでのv1.0全画面最終視覚確認
+- 大量の実画像・実定点を入れた状態の長期容量テスト
+- 1180px以下の全端末での実機操作
+
+未確認項目は確認済みとして扱いません。
 
 ## バージョン
 
 - v0.1 — 初版
-- v0.2 — Win + Shift + S対応
+- v0.2 — スクリーンショット運用改善
 - v0.3 — GitHub Pages対応
-- v0.4 — GitHub共有JSON対応
-- v0.5 — MP4 / IndexedDB対応
-- v0.6 — GitHub向けMP4自動圧縮
-- v0.7 — プレミアムUI
-- v0.8 — MAP / 定点カード / 詳細パネル再設計
-- **v0.9.0 — 他の自作GitHubプロジェクトを参考にProduct UX・モバイル・表示設定・運用を改善**
+- v0.4 — GitHub共有JSON
+- v0.5 — MP4 / IndexedDB
+- v0.6 — MP4自動圧縮
+- v0.7 — Premium UI
+- v0.8 — MAP / カード / 詳細再設計
+- v0.9 — 他プロジェクトのUIパターン導入
+- **v1.0.0 / 2026-08-30 — 監査結果を反映した保存・共有・UI・検証基盤の整理**
