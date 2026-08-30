@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0b1118" />
   <title>Lineup Lab — VALORANT 定点ライブラリ</title>
   <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=1.0.0" />
 </head>
 <body>
   <div class="app-shell">
@@ -128,7 +128,7 @@
 
             <div class="lineup-list-head">
               <div><span class="section-kicker">MATCHING LINEUPS</span><h2>定点一覧</h2></div>
-              <select id="sortFilter" class="select-control compact-select"><option value="recommended">おすすめ順</option><option value="difficulty">難易度順</option><option value="name">名前順</option></select>
+              <select id="sortFilter" class="select-control compact-select"><option value="recommended">標準順</option><option value="difficulty">難易度順</option><option value="name">名前順</option></select>
             </div>
             <div class="lineup-card-grid" id="lineupCards"></div>
           </section>
@@ -254,16 +254,17 @@
       <div class="modal-head"><div><span class="section-kicker">DATA</span><h2 id="dataModalTitle">データ管理</h2></div><button class="modal-close" id="closeDataModal">×</button></div>
       <div class="modal-body">
         <div class="data-stat"><span>保存中のマイ定点</span><strong id="dataCount">0</strong></div>
-        <button class="data-action" id="exportDataBtn"><span class="data-icon">↓</span><div><strong>JSONを書き出す</strong><small>バックアップや別PCへの移行用</small></div></button>
-        <label class="data-action file-action"><input type="file" id="importDataInput" accept="application/json,.json" /><span class="data-icon">↑</span><div><strong>JSONを読み込む</strong><small>現在のデータへ追加します</small></div></label>
-        <button class="data-action danger" id="clearUserDataBtn"><span class="data-icon">×</span><div><strong>マイ定点をすべて削除</strong><small>この操作は元に戻せません</small></div></button>
+        <button class="data-action" id="exportDataBtn"><span class="data-icon">↓</span><div><strong>共有用JSONを書き出す</strong><small>「GitHub共有」がONのマイ定点だけ反映</small></div></button>
+        <label class="data-action file-action"><input type="file" id="importDataInput" accept="application/json,.json" /><span class="data-icon">↑</span><div><strong>JSONを読み込む</strong><small>形式を検証して現在のデータへ追加</small></div></label>
+        <button class="data-action danger" id="clearUserDataBtn"><span class="data-icon">×</span><div><strong>マイ定点をすべて削除</strong><small>関連するローカルMP4も削除します</small></div></button>
       </div>
-      <div class="modal-note">画像は容量を抑えるため、保存時にブラウザ内で自動圧縮します。</div>
+      <div class="modal-note">画像は保存時に圧縮します。MP4はIndexedDBへ保存し、共有時はGitHubの assets/videos/ を使用します。</div>
     </div>
   </div>
 
   <div class="toast-stack" id="toastStack" aria-live="polite"></div>
-  <script src="assets/js/storage.js"></script>
-  <script src="assets/js/app.js"></script>
+  <script src="assets/js/storage.js?v=1.0.0"></script>
+  <script src="assets/js/app.js?v=1.0.0"></script>
+  <script type="module" src="assets/js/foundation-v1.js?v=1.0.0"></script>
 </body>
 </html>
