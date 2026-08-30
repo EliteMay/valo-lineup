@@ -1,0 +1,30 @@
+name: Validate Lineup Data
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'data/lineups.json'
+      - 'tests/validate-data.mjs'
+      - '.github/workflows/validate.yml'
+  pull_request:
+    paths:
+      - 'data/lineups.json'
+      - 'tests/validate-data.mjs'
+      - '.github/workflows/validate.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate shared lineup JSON
+        run: node tests/validate-data.mjs
