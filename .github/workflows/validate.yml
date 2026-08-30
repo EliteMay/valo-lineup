@@ -1,16 +1,20 @@
-name: Validate Lineup Data
+name: Validate Lineup Project
 
 on:
   push:
     branches: [main]
     paths:
       - 'data/lineups.json'
-      - 'tests/validate-data.mjs'
+      - 'tests/**'
+      - 'assets/js/**'
+      - 'sw.js'
       - '.github/workflows/validate.yml'
   pull_request:
     paths:
       - 'data/lineups.json'
-      - 'tests/validate-data.mjs'
+      - 'tests/**'
+      - 'assets/js/**'
+      - 'sw.js'
       - '.github/workflows/validate.yml'
 
 permissions:
@@ -28,3 +32,17 @@ jobs:
           node-version: '20'
       - name: Validate shared lineup JSON
         run: node tests/validate-data.mjs
+      - name: Check classic JavaScript syntax
+        run: |
+          node --check assets/js/app.js
+          node --check assets/js/storage.js
+          node --check assets/js/media-store.js
+          node --check assets/js/compressor-core.js
+          node --check assets/js/ffmpeg-worker.js
+          node --check sw.js
+      - name: Check module JavaScript syntax
+        run: |
+          node --input-type=module --check < assets/js/foundation-v1.js
+          node --input-type=module --check < assets/js/foundation-core-v1.js
+          node --input-type=module --check < assets/js/premium-ui-v2.js
+          node --input-type=module --check < assets/js/compressor.js
