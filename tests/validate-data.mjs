@@ -41,7 +41,10 @@ items.forEach((item,index) => {
   if (item.images != null) {
     if (!item.images || typeof item.images !== 'object' || Array.isArray(item.images)) errors.push(`${prefix}: images が不正です`);
     else for (const key of ['standing','aim','result']) {
-      if (item.images[key] != null && typeof item.images[key] !== 'string') errors.push(`${prefix}: images.${key} は文字列である必要があります`);
+      const value = item.images[key];
+      if (value != null && typeof value !== 'string') errors.push(`${prefix}: images.${key} は文字列である必要があります`);
+      if (typeof value === 'string' && /^data:image\//i.test(value)) errors.push(`${prefix}: images.${key} にBase64画像を埋め込まないでください`);
+      if (typeof value === 'string' && value.replace(/^\.\//,'').startsWith('_lineup-media/')) errors.push(`${prefix}: images.${key} にローカル専用参照が入っています`);
     }
   }
 });
