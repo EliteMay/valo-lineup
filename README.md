@@ -1,134 +1,55 @@
-# Lineup Lab v1.1.0
+# Lineup Lab v1.2.0
 
 VALORANTの定点を **立ち位置 → 中継点 → 着弾点** としてマップ上で管理し、スクリーンショット・動画と一緒に確認できるGitHub Pages向け静的Webアプリです。
 
 ## 目的
 
-- 定点をマップ / エージェント / アビリティから素早く探す
+- マップ / エージェント / アビリティから定点を素早く探す
 - 自分の定点を作成・編集する
-- スクリーンショットとMP4を定点へ紐付ける
+- 立ち位置 / 合わせ場所 / 着弾結果を画像で残す
+- MP4 / YouTubeと一緒に定点を確認する
 - GitHub Pagesだけで友達と共有する
-- 画像や動画が増えてもlocalStorageを圧迫しにくくする
-- 修正時に別機能まで壊れにくい構造へ整理する
+- データ量が増えても保存破綻しにくくする
+- 見た目と操作性の両方を「競技用の戦術ツール」として揃える
 
-## 使用者
+## v1.2 Visual Direction
 
-個人利用・友達同士での共有を想定しています。大規模サービス向けのアカウント管理や投稿審査は前提にしていません。
+v1.2では、以前の「Premium Card UI」から **Tactical Workspace** へ方向を変更しました。
 
----
+Design Concept:
 
-## v1.1で改善したこと
+- 中央のマップを一番強いSignatureにする
+- 左はフィルター、中央は戦術マップ、右は定点インスペクター
+- VALORANT風の派手な演出ではなく、競技用ツールの緊張感を優先
+- 赤は重要操作 / 選択状態だけに使用
+- 黒〜グラファイトの中立Surfaceを中心にする
+- 角丸 / Shadow / Gradientを必要以上に使わない
+- 画像・マップ・定点情報そのものを主役にする
 
-### 1. 画像をIndexedDBへ移行
+### v1.2で変更した見た目
 
-v1.0まではWebP化したスクリーンショットをData URLとしてlocalStorageへ保存していました。
+- App Railを72pxの細いツールバーへ整理
+- Topbarを76pxへ整理し、Tabsをフラット化
+- Panelの大きい角丸・強いShadowを削減
+- 左フィルターを密度の高い戦術パネルへ変更
+- Map選択をカードではなくFilmstrip寄りに変更
+- Agent pickerを5列のコンパクトグリッドへ変更
+- 中央Mapに戦術フレームを追加
+- Mapをより明るく、背景装飾を弱く変更
+- 定点カードを矩形寄り・画像主役へ変更
+- 選択中の定点は赤い左ラインで明示
+- 右詳細をInspectorとして再設計
+- 作成画面をWorkbenchとして統一
+- マイ定点 / Modalも同じShape languageへ統一
+- 1180px以下は既存のNav / Filter Drawerを維持
 
-v1.1では:
-
-- 画像本体 → IndexedDB `lineupLab.images.v1`
-- localStorage → `_lineup-media/<lineup-id>/<slot>.webp` という軽い参照だけ
-- 表示 → Service Worker `sw.js` がIndexedDBから画像を返す
-
-という構成へ変更しました。
-
-対応画像:
-
-- `standing` — 立ち位置
-- `aim` — 合わせ場所
-- `result` — 着弾結果
-
-### 2. 旧Data URLを自動移行
-
-既存のマイ定点にData URL画像が残っていても削除しません。
-
-GitHub Pages上でService Worker / IndexedDBが利用できる場合、初回起動時に:
-
-1. 旧Data URLをIndexedDBへ保存
-2. localStorage側を軽い参照へ置換
-3. 次回以降はService Worker経由で表示
-
-します。
-
-Service Workerを利用できない環境では従来方式へフォールバックします。
-
-### 3. 画像削除時の孤児データ掃除
-
-- 定点削除
-- 全削除
-- 画像差し替え / 画像解除
-
-で参照されなくなったIndexedDB画像を削除します。
-
-MP4についても、参照されなくなったローカル動画を従来どおり掃除します。
-
-### 4. 共有パッケージZIP
-
-従来の「共有用JSONを書き出す」を **共有パッケージを書き出す** へ強化しました。
-
-ZIPには以下をまとめます。
+現在のVisual Source of Truth:
 
 ```text
-lineups.json
-assets/
-└─ lineups/
-   └─ <lineup-id>/
-      ├─ standing.webp
-      ├─ aim.webp
-      └─ result.webp
-README.txt
+assets/css/visual.css
 ```
 
-ローカル専用 `_lineup-media/` 参照は共有JSONへそのまま出しません。
-
-共有時は `assets/lineups/<id>/...` に変換します。
-
-### 5. 共有JSON検証を強化
-
-GitHub Actionsで以下をエラーにします。
-
-- Data URL画像を `data/lineups.json` へ直接埋め込む
-- `_lineup-media/` のローカル専用参照を共有JSONへ入れる
-- ID重複
-- 座標不正
-- 必須項目不足
-- side / difficulty / tags / videoUrl の形式不正
-
-### 6. JavaScript構文チェック
-
-GitHub Actionsで以下も自動確認します。
-
-- `app.js`
-- `storage.js`
-- `media-store.js`
-- `foundation-v1.js`
-- `foundation-core-v1.js`
-- `premium-ui-v2.js`
-- MP4圧縮関連JS
-- `sw.js`
-
-npm依存はありません。
-
----
-
-## 現在の読み込み構造
-
-```text
-index.html
-├─ storage.js
-├─ app.js
-└─ foundation-v1.js
-   ├─ media-store.js
-   └─ foundation-core-v1.js
-      └─ premium-ui-v2.js
-
-storage.js
-└─ compressor.js
-   └─ compressor-core.js
-```
-
-`foundation-v1.js` はv1.1用の薄いローダーです。
-
-UI本体とMP4圧縮は分離されています。
+古いCSSへさらに色違いPatchを足すのではなく、最終Visual layerとして読み込んでいます。
 
 ---
 
@@ -137,7 +58,7 @@ UI本体とMP4圧縮は分離されています。
 ### 定点ライブラリ
 
 - `data/lineups.json` 読み込み
-- マップ / エージェント / アビリティ / 攻守 / 難易度
+- マップ / エージェント / アビリティ / 攻守 / 難易度フィルター
 - エージェント検索
 - お気に入り
 - フリーワード検索
@@ -145,8 +66,8 @@ UI本体とMP4圧縮は分離されています。
 - マップ上の立ち位置 / 中継点 / 着弾点
 - 軌道表示
 - 近い着弾点のグループ化
-- 参考画像付きカード
-- 詳細パネル
+- 参考画像付き定点カード
+- 詳細Inspector
 - YouTube / 通常動画 / MP4再生
 
 ### 定点作成
@@ -158,7 +79,6 @@ UI本体とMP4圧縮は分離されています。
 - `Win + Shift + S` → `Ctrl + V`
 - 画像ファイル選択
 - MP4ファイル選択
-- MP4をIndexedDBへ保存
 - GitHub向けMP4自動圧縮
 - メモ / タグ
 - 編集 / 削除
@@ -168,21 +88,19 @@ UI本体とMP4圧縮は分離されています。
 - GitHub共有ON/OFF
 - 共有パッケージZIP
 - JSON検証付き読み込み
-- 保存量の目安表示
 - サムネイルON/OFF
 - コンパクト表示
+- 保存量表示
 
 ---
 
-## 保存場所
+## 保存
 
 ### 共通定点
 
 ```text
 data/lineups.json
 ```
-
-GitHub Pagesを開く全員に共通です。
 
 ### マイ定点
 
@@ -194,8 +112,6 @@ lineupLab.favorites.v1
 lineupLab.preferences.v1
 ```
 
-画像本体はlocalStorageへ入れず、画像参照だけを保存します。
-
 ### ローカル画像
 
 IndexedDB:
@@ -204,6 +120,8 @@ IndexedDB:
 DB: lineupLab.images.v1
 store: images
 ```
+
+localStorageには `_lineup-media/<lineup-id>/<slot>.webp` の参照だけを保存します。
 
 ### ローカルMP4
 
@@ -216,82 +134,74 @@ store: videos
 
 ---
 
-## GitHub共有手順
+## GitHub共有
 
 ### 画像あり定点
 
-1. 「自分で作る」で定点を保存
-2. 「マイ定点」で共有したい定点の **GitHub共有** をON
+1. 定点を保存
+2. 「マイ定点」で **GitHub共有** をON
 3. 「データ管理」→ **共有パッケージを書き出す**
 4. ZIPを展開
-5. `lineups.json` をGitHubの `data/lineups.json` へ置き換える
-6. ZIP内 `assets/lineups/` をGitHubの `assets/lineups/` へ同じ構成でアップロード
-7. GitHub Pages反映後に更新
+5. `lineups.json` を `data/lineups.json` へ反映
+6. `assets/lineups/` を同じ構成でGitHubへ反映
+
+ZIP:
+
+```text
+lineups.json
+assets/
+└─ lineups/
+   └─ <lineup-id>/
+      ├─ standing.webp
+      ├─ aim.webp
+      └─ result.webp
+README.txt
+```
 
 ### MP4あり定点
 
-MP4はZIPへ自動同梱しません。
+MP4は共有ZIPへ含めません。
 
 1. 「共有用MP4を保存」
-2. MP4をGitHub `assets/videos/` へアップロード
-3. その後、共有パッケージZIPを反映
-
-MP4をZIPへ含めない理由は、動画サイズが大きくGitHubアップロード制限へ到達しやすいためです。
+2. `assets/videos/` へアップロード
+3. 共有パッケージを反映
 
 ---
 
 ## MP4自動圧縮
 
-- 目標: 24MB以下
-- 内部目標: 約22.5MB
+- 目標24MB以下
+- 内部目標 約22.5MB
 - H.264 / AAC
 - 最大60fps
-- 動画時間に応じ最大1080p / 720p / 540p / 480p
-- 24MBを超えた場合は1回再調整
+- 最大1080p / 720p / 540p / 480pを動画時間から選択
+- 24MB超なら1回再調整
 - 300MB超は自動圧縮対象外
 - ffmpeg.wasmは圧縮時だけ読み込み
 
 ---
 
-## ファイル構成
+## Runtime構成
 
 ```text
-/
-├─ .github/
-│  └─ workflows/
-│     └─ validate.yml
-├─ .gitignore
-├─ .nojekyll
-├─ index.html
-├─ sw.js
-├─ README.md
-├─ 作業報告書.md
-├─ assets/
-│  ├─ css/
-│  │  ├─ styles.css
-│  │  ├─ premium-v2.css
-│  │  └─ foundation-v1.css
-│  ├─ icons/
-│  │  └─ favicon.svg
-│  ├─ js/
-│  │  ├─ app.js
-│  │  ├─ storage.js
-│  │  ├─ media-store.js
-│  │  ├─ foundation-v1.js
-│  │  ├─ foundation-core-v1.js
-│  │  ├─ premium-ui-v2.js
-│  │  ├─ compressor.js
-│  │  ├─ compressor-core.js
-│  │  └─ ffmpeg-worker.js
-│  ├─ lineups/
-│  │  └─ .gitkeep
-│  └─ videos/
-│     └─ .gitkeep
-├─ data/
-│  └─ lineups.json
-└─ tests/
-   └─ validate-data.mjs
+index.html
+├─ storage.js
+├─ app.js
+└─ foundation-v1.js
+   ├─ media-store.js
+   ├─ foundation-core-v1.js
+   │  └─ premium-ui-v2.js
+   └─ visual.css
+
+storage.js
+└─ compressor.js
+   └─ compressor-core.js
+
+sw.js
+└─ IndexedDB画像配信
 ```
+
+`visual.css` が現在のVisual Source of Truthです。
 
 ---
 
@@ -307,37 +217,50 @@ MP4をZIPへ含めない理由は、動画サイズが大きくGitHubアップ�
 8. APIキー・GitHubトークンを公開コードへ入れない
 9. MP4本体をlocalStorage / JSONへ埋め込まない
 10. ローカル画像本体をlocalStorageへ保存しない
-11. 共有画像は `assets/lineups/` を使用
-12. 共有MP4は `assets/videos/` を使用
+11. 共有画像は `assets/lineups/`
+12. 共有MP4は `assets/videos/`
 13. 見た目改善のために主要機能を削除しない
+
+---
+
+## 自動検証
+
+`.github/workflows/validate.yml` で、共有JSONと主要JavaScriptの構文を検証します。
+
+主な検証:
+
+- JSONトップレベル配列
+- 必須項目
+- ID重複
+- 座標0〜100
+- side / difficulty / tags / videoUrl
+- Data URL画像の共有JSON混入
+- `_lineup-media/` の共有JSON混入
+- 主要JS / Service Worker構文
 
 ---
 
 ## 現在残っている重要課題
 
-### 1. app.js / premium-ui-v2.js の統合
+### app.js / premium-ui-v2.js の統合
 
-カードサムネイルなど一部は、まだ `premium-ui-v2.js` がMutationObserverで後付けしています。
+カードサムネイル・Agent検索・Detail装飾の一部は、まだ `premium-ui-v2.js` のMutationObserver方式です。
 
-次の大きな保守性改善は、これを `app.js` のrender処理へ統合することです。
+今後は `app.js` の正式render処理へ統合するのが次の大きな保守性改善です。
 
-### 2. 実用定点データ不足
+### 実用定点データ不足
 
-`data/lineups.json` はUI確認用デモ中心です。
+`data/lineups.json` はデモ中心です。実戦定点は正しい照準位置・チャージ・バウンドを確認して追加する必要があります。
 
-実戦用定点は正しい照準位置・チャージ・バウンド等を確認して追加する必要があります。未確認データは追加しません。
+### 実機検証
 
-### 3. 実機検証
-
-未確認:
+未確認項目は確認済み扱いにしません。
 
 - Firefox / Chromiumで画像Data URL→IndexedDB自動移行
 - Service Worker経由の画像再表示
-- 共有ZIPをGitHubへ反映した後の友達PC表示
-- Windows実機でのffmpeg.wasm圧縮完走
+- 共有ZIPを別PCから表示
+- Windows実機ffmpeg.wasm圧縮
 - 大量画像100件以上の長期利用
-
-未確認項目は確認済みとして扱いません。
 
 ---
 
@@ -345,12 +268,13 @@ MP4をZIPへ含めない理由は、動画サイズが大きくGitHubアップ�
 
 - v0.1 — 初版
 - v0.2 — スクリーンショット改善
-- v0.3 — GitHub Pages対応
+- v0.3 — GitHub Pages
 - v0.4 — 共有JSON
 - v0.5 — MP4 / IndexedDB
 - v0.6 — MP4自動圧縮
 - v0.7 — Premium UI
 - v0.8 — MAP / カード / 詳細再設計
 - v0.9 — 他プロジェクトのUIパターン導入
-- v1.0.0 — 監査結果を反映した保存・共有・UI・検証基盤整理
-- **v1.1.0 / 2026-08-30 — 画像IndexedDB化 / Service Worker / 共有画像ZIP対応**
+- v1.0.0 — 監査結果を反映した基盤整理
+- v1.1.0 — 画像IndexedDB / Service Worker / 共有画像ZIP
+- **v1.2.0 / 2026-08-31 — Tactical Workspace Visual Redesign**
