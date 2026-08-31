@@ -1,7 +1,16 @@
 import './media-store.js?v=1.1.0';
 import './foundation-core-v1.js?v=1.1.0';
 
-document.documentElement.dataset.lineupLabVersion = 'v1.1.0';
+document.documentElement.dataset.lineupLabVersion = 'v1.2.0';
+
+const visualUrl = new URL('../css/visual.css?v=1.2.0', import.meta.url).href;
+if (!document.querySelector('link[data-lineuplab-visual]')) {
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = visualUrl;
+  link.dataset.lineuplabVisual = '1';
+  document.head.appendChild(link);
+}
 
 function installFallbackStorageGuard(){
   const api = window.LineupStorage;
@@ -23,9 +32,9 @@ function installFallbackStorageGuard(){
 }
 
 function applyVersion(){
-  document.documentElement.dataset.lineupLabVersion = 'v1.1.0';
+  document.documentElement.dataset.lineupLabVersion = 'v1.2.0';
   const chip = document.querySelector('.foundation-version');
-  if (chip) chip.textContent = 'Lineup Lab v1.1.0';
+  if (chip) chip.textContent = 'Lineup Lab v1.2.0';
 }
 
 installFallbackStorageGuard();
