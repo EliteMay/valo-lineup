@@ -1,6 +1,21 @@
-# Lineup Lab v1.2.0
+# Lineup Lab v1.2.1
 
 VALORANTの定点を **立ち位置 → 中継点 → 着弾点** としてマップ上で管理し、スクリーンショット・動画と一緒に確認できるGitHub Pages向け静的Webアプリです。
+
+## 現在の位置づけ
+
+v1.2.1は、v1.2のTactical Workspaceを土台に **完成工程 / Regression Hardening** を行った版です。
+
+- 主要機能: 実装済み
+- 共有JSON / JavaScript Static Validation: 自動化済み
+- Chromium Browser Smoke Test: 自動化
+- Desktop / Mobileの横Overflow・Drawer geometry: 自動確認
+- GitHub Pages: main / root
+- Visual Source of Truth: `assets/css/visual.css`
+
+実戦用の定点データそのものは、正確性を確認できないものを推測で追加しないため、現在もデモ中心です。
+
+---
 
 ## 目的
 
@@ -12,44 +27,20 @@ VALORANTの定点を **立ち位置 → 中継点 → 着弾点** としてマ�
 - データ量が増えても保存破綻しにくくする
 - 見た目と操作性の両方を「競技用の戦術ツール」として揃える
 
-## v1.2 Visual Direction
-
-v1.2では、以前の「Premium Card UI」から **Tactical Workspace** へ方向を変更しました。
-
-Design Concept:
+## Design Direction — Tactical Workspace
 
 - 中央のマップを一番強いSignatureにする
 - 左はフィルター、中央は戦術マップ、右は定点インスペクター
-- VALORANT風の派手な演出ではなく、競技用ツールの緊張感を優先
 - 赤は重要操作 / 選択状態だけに使用
 - 黒〜グラファイトの中立Surfaceを中心にする
 - 角丸 / Shadow / Gradientを必要以上に使わない
 - 画像・マップ・定点情報そのものを主役にする
-
-### v1.2で変更した見た目
-
-- App Railを72pxの細いツールバーへ整理
-- Topbarを76pxへ整理し、Tabsをフラット化
-- Panelの大きい角丸・強いShadowを削減
-- 左フィルターを密度の高い戦術パネルへ変更
-- Map選択をカードではなくFilmstrip寄りに変更
-- Agent pickerを5列のコンパクトグリッドへ変更
-- 中央Mapに戦術フレームを追加
-- Mapをより明るく、背景装飾を弱く変更
-- 定点カードを矩形寄り・画像主役へ変更
-- 選択中の定点は赤い左ラインで明示
-- 右詳細をInspectorとして再設計
-- 作成画面をWorkbenchとして統一
-- マイ定点 / Modalも同じShape languageへ統一
-- 1180px以下は既存のNav / Filter Drawerを維持
 
 現在のVisual Source of Truth:
 
 ```text
 assets/css/visual.css
 ```
-
-古いCSSへさらに色違いPatchを足すのではなく、最終Visual layerとして読み込んでいます。
 
 ---
 
@@ -181,6 +172,53 @@ MP4は共有ZIPへ含めません。
 
 ---
 
+## 自動検証
+
+### Static Validation
+
+`.github/workflows/validate.yml`
+
+- JSONトップレベル配列
+- 必須項目
+- ID重複
+- 座標0〜100
+- side / difficulty / tags / videoUrl
+- Data URL画像の共有JSON混入
+- `_lineup-media/` の共有JSON混入
+- 主要JavaScript / Service Worker構文
+
+### Chromium Browser Smoke
+
+`.github/workflows/browser-smoke.yml`
+
+実ブラウザで次を確認します。
+
+```text
+起動
+→ 作成画面
+→ start / end配置
+→ 画像登録
+→ 定点保存
+→ localStorage確認
+→ 再読み込み
+→ マイ定点復元
+→ 詳細表示
+```
+
+加えて:
+
+- Desktop横Overflow
+- Mobile横Overflow
+- Mobile navigation drawer
+- Mobile filter drawer
+- DrawerがViewport内へ入っていること
+- Page Error / Console Error
+- Desktop / Mobile Screenshot Artifact
+
+このSmoke Test導入時に、モバイルDrawerのCSS selectorが誤っていて画面外に残る実バグを検出し、修正しました。
+
+---
+
 ## Runtime構成
 
 ```text
@@ -201,7 +239,7 @@ sw.js
 └─ IndexedDB画像配信
 ```
 
-`visual.css` が現在のVisual Source of Truthです。
+`premium-ui-v2.js` のMutationObserver後付けは既知のArchitecture debtです。主要フローのBrowser Regression Testを先に固定した上で、正式render pathへの統合対象としています。
 
 ---
 
@@ -223,44 +261,24 @@ sw.js
 
 ---
 
-## 自動検証
+## 現在残っている項目
 
-`.github/workflows/validate.yml` で、共有JSONと主要JavaScriptの構文を検証します。
+### Content: 実用定点データ
 
-主な検証:
+`data/lineups.json` はデモ中心です。正しい照準位置・Charge・Bounceを確認できない定点は実用データとして追加しません。
 
-- JSONトップレベル配列
-- 必須項目
-- ID重複
-- 座標0〜100
-- side / difficulty / tags / videoUrl
-- Data URL画像の共有JSON混入
-- `_lineup-media/` の共有JSON混入
-- 主要JS / Service Worker構文
+### Architecture: Premium UI統合
 
----
+カードサムネイル・Agent検索・Detail装飾の一部は、まだ `premium-ui-v2.js` がMutationObserverで後付けしています。機能を壊す一括置換は避け、Browser RegressionをOracleとして正式renderへ段階統合します。
 
-## 現在残っている重要課題
+### Real-device Verification
 
-### app.js / premium-ui-v2.js の統合
+CIのChromiumとは別に、以下は実機未確認です。
 
-カードサムネイル・Agent検索・Detail装飾の一部は、まだ `premium-ui-v2.js` のMutationObserver方式です。
-
-今後は `app.js` の正式render処理へ統合するのが次の大きな保守性改善です。
-
-### 実用定点データ不足
-
-`data/lineups.json` はデモ中心です。実戦定点は正しい照準位置・チャージ・バウンドを確認して追加する必要があります。
-
-### 実機検証
-
-未確認項目は確認済み扱いにしません。
-
-- Firefox / Chromiumで画像Data URL→IndexedDB自動移行
-- Service Worker経由の画像再表示
-- 共有ZIPを別PCから表示
-- Windows実機ffmpeg.wasm圧縮
-- 大量画像100件以上の長期利用
+- ユーザーのWindows / Firefoxで全導線
+- 実MP4を使ったffmpeg.wasm圧縮完走
+- 共有ZIPを別PCへ反映した実利用
+- 100件以上の画像を使った長期容量試験
 
 ---
 
@@ -277,4 +295,5 @@ sw.js
 - v0.9 — 他プロジェクトのUIパターン導入
 - v1.0.0 — 監査結果を反映した基盤整理
 - v1.1.0 — 画像IndexedDB / Service Worker / 共有画像ZIP
-- **v1.2.0 / 2026-08-31 — Tactical Workspace Visual Redesign**
+- v1.2.0 — Tactical Workspace Visual Redesign
+- **v1.2.1 / 2026-09-01 — Browser Smoke / Mobile Drawer Regression Hardening**
