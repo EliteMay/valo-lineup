@@ -13,7 +13,11 @@ async function openApp(page) {
   page.on('console', message => {
     if (message.type() === 'error') consoleErrors.push(message.text());
   });
-  await page.route('https://valorant-api.com/**', route => route.abort());
+  await page.route('https://valorant-api.com/**', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ data: [] }),
+  }));
   await page.goto(ROOT, { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#libraryMapStage')).toBeVisible();
   await expect(page.locator('#lineupCards')).toBeVisible();
@@ -30,7 +34,18 @@ async function assertNoHorizontalOverflow(page) {
   expect(overflow.bodyWidth).toBeLessThanOrEqual(overflow.innerWidth + 2);
 }
 
+async function assertInsideViewport(page, locator) {
+  const box = await locator.boundingBox();
+  expect(box).not.toBeNull();
+  const viewport = page.viewportSize();
+  expect(box.x).toBeGreaterThanOrEqual(-1);
+  expect(box.y).toBeGreaterThanOrEqual(-1);
+  expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
+  expect(box.y + Math.min(box.height, viewport.height)).toBeLessThanOrEqual(viewport.height + 1);
+}
+
 test('desktop: create, save, reload and restore a lineup', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
   const diagnostics = await openApp(page);
   await expect(page.locator('.top-tab[data-tab-target="create"]')).toBeVisible();
   await page.locator('.top-tab[data-tab-target="create"]').click();
@@ -93,12 +108,18 @@ test('mobile: navigation and filter drawers remain usable without overflow', asy
 
   await navToggle.click();
   await expect(page.locator('body')).toHaveClass(/nav-drawer-open/);
+  const rail = page.locator('.rail');
+  await expect(rail).toBeVisible();
+  await assertInsideViewport(page, rail);
   await page.locator('.mobile-nav-backdrop').click({ position: { x: 380, y: 400 } });
   await expect(page.locator('body')).not.toHaveClass(/nav-drawer-open/);
 
   await filterToggle.click();
   await expect(page.locator('body')).toHaveClass(/filter-drawer-open/);
-  await expect(page.locator('.filter-panel')).toBeVisible();
+  const filterPanel = page.locator('.filter-panel');
+  await expect(filterPanel).toBeVisible();
+  await assertInsideViewport(page, filterPanel);
+  await expect(page.locator('.foundation-filter-close')).toBeInViewport();
   await page.screenshot({ path: 'test-results/mobile-filter.png', fullPage: true });
   await page.locator('.foundation-filter-close').click();
   await expect(page.locator('body')).not.toHaveClass(/filter-drawer-open/);
