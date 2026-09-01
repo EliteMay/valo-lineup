@@ -99,6 +99,7 @@ test('desktop: create, save, reload and restore a lineup', async ({ page }) => {
 
 test('mobile: navigation and filter drawers remain usable without overflow', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   const diagnostics = await openApp(page);
 
   const navToggle = page.locator('.mobile-nav-toggle');
